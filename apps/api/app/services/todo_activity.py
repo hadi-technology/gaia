@@ -13,6 +13,7 @@ from typing import Protocol
 from app.constants.todos import TodoActivityEvent
 from app.db.mongodb.retry import TRANSIENT_MONGO_RETRY
 from app.services.todo_canvas_storage import append_activity
+from ..db.mongodb.collections import get_async_collection
 from shared.py.wide_events import log
 
 #: An activity.md line that opens with its own date and time is one record: the same line
@@ -123,3 +124,10 @@ def field_change_lines(update: ScheduleFieldChanges, *, by: str, at: datetime) -
 def agent_actor(conversation_id: str | None) -> str:
     """Name who made a change from inside an agent run, for the todo's activity log."""
     return f"GAIA in conversation {conversation_id[:8]}" if conversation_id else "GAIA"
+
+
+async def count_activity_entries(todo_id: str) -> int:
+    """How many activity entries a todo has (quick count for the canvas header)."""
+    todos = get_async_collection("todos")
+    doc = await todos.find_one({"_id": todo_id}, {"activity_count": 1})
+    return int((doc or {}).get("activity_count", 0))
